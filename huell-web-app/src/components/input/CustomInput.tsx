@@ -18,6 +18,7 @@ interface Props {
   leftElement?: ReactNode;
   rightElement?: ReactNode;
   onChange?: (value: string) => void;
+  onEnterKeyPressed?: () => void;
 }
 
 export const CustomInput = ({
@@ -29,8 +30,16 @@ export const CustomInput = ({
                               inputRightAddon,
                               leftElement,
                               rightElement,
-                              onChange
+                              onChange,
+                              onEnterKeyPressed,
 }: Props) => {
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      onEnterKeyPressed?.();
+    }
+  }
+
   return (
     <InputGroup size='md'>
       {
@@ -47,6 +56,7 @@ export const CustomInput = ({
           color: placeholderColor
         }}
         value={value}
+        onKeyDown={handleKeyDown}
         onChange={(e) => onChange?.(e.target.value)}
       />
       {

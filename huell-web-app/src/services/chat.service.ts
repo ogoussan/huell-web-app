@@ -19,7 +19,7 @@ export const useMessagesByChatId = (
     enabled: !!chatId,
   });
 
-export const useCreateMessage = (): UseMutationResult<
+export const useCreateMessage = (onSuccess?: (message: Message) => void): UseMutationResult<
   Message,
   RequestError,
   RequestBody<Partial<Message>>
@@ -37,6 +37,8 @@ export const useCreateMessage = (): UseMutationResult<
 
     onSuccess: (message) => {
       queryClient.invalidateQueries({ queryKey: ['message', 'chat', message.chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chat'] });
+      onSuccess?.(message);
     },
     onError: (e) => {
       console.error(e);

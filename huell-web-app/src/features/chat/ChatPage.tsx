@@ -1,42 +1,56 @@
 import {VStack, Box, Divider, Button, Text, Spinner} from "@chakra-ui/react"
 import {CustomInput} from "../../components/input/CustomInput.tsx";
 import {Send} from "lucide-react";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {ChatMessage} from "./ChatMessage.tsx";
 import {activeStyle} from "../../theme/style.ts";
 import {useChats, useCreateMessage, useMessagesByChatId} from "../../services/chat.service.ts";
 import {CustomSelect} from "../../components/input/CustomSelect.tsx";
-import {Chat} from "../../interfaces";
+import {Chat, Message} from "../../interfaces";
 import {MessageType} from "../../enums";
 
 export const ChatPage = () => {
   const [inputValue, setInputValue] = useState('');
   const {data: chats = []} = useChats();
   const [ isFirstChatFetched, setIsFirstChatFetched ] = useState(false);
+  const [isNewChat, setIsNewChat] = useState(false);
   const [selectedChatId, setSelectedChatId]
     = useState<string>('new');
   const {data: messages = []} = useMessagesByChatId(selectedChatId);
-  const { mutate: sendMessage,isPending } = useCreateMessage();
+  const onSendMessageSuccess = useCallback((message: Message) => {
+    if (isNewChat) {
+      setSelectedChatId(message.chatId);
+      setIsNewChat(false);
+    }
+  }, [isNewChat]);
+  const { mutate: sendMessage, isPending } = useCreateMessage(onSendMessageSuccess);
 
   useEffect(() => {
     if (chats.length && !isFirstChatFetched) {
+      console.log('first')
       const [firstChat] = chats;
       setSelectedChatId(firstChat._id);
-      setIsFirstChatFetched(false);
+      setIsFirstChatFetched(true);
     }
   }, [chats]);
 
   const handleSend = (): void => {
     sendMessage({
       type: MessageType.USER,
-      chatId: selectedChatId,
+      chatId: selectedChatId === 'new' ? undefined : selectedChatId,
       content: inputValue
     });
+    setInputValue('');
+  }
+
+  const handleNewChat = () => {
+    setIsNewChat(true);
+    setSelectedChatId('new');
   }
 
   return (
       <VStack w="100%" h="100%" bg="gray.600" p={12} rounded="md">
-          <Button w="100%">
+          <Button w="100%" onClick={handleNewChat}>
             <Text>New Chat</Text>
           </Button>
           <CustomSelect
@@ -45,7 +59,7 @@ export const ChatPage = () => {
             getLabel={(chat: Chat) => chat.name}
             onChange={(value) => setSelectedChatId(value)}
             value={selectedChatId}
-            hiddenValues={['new']}
+            hiddenValues={isNewChat ? [] : ['new']}
           />
           <VStack gap={2} w="100%" overflow="scroll" pb={12} divider={<Divider />}>
             {messages.map((message, i) => (
@@ -64,6 +78,7 @@ export const ChatPage = () => {
               placeholderColor={"gray.400"}
               value={inputValue}
               onChange={(value) => setInputValue(value)}
+              onEnterKeyPressed={handleSend}
               rightElement={
                 <Box onClick={handleSend} p={2} cursor="pointer" _hover={activeStyle}>
                   {isPending ? (<Spinner />) : (<Send />)}
