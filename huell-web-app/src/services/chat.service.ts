@@ -1,15 +1,16 @@
-import request from "./api.service.ts";
+import request, {RequestError} from "./api.service.ts";
 import {Chat, Message} from "../interfaces";
-import {useQuery, UseQueryResult} from "@tanstack/react-query";
+import {useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
+import {RequestBody} from "../types";
 
-export const useChats = <T extends Chat[]>(
+export const useChats = (
 ): UseQueryResult<Chat[]> =>
   useQuery({
     queryKey: ['chat'],
     queryFn: () => request<Chat[]>(`/chat`),
   });
 
-export const useMessagesByChatId = <T extends Chat[]>(
+export const useMessagesByChatId = (
   chatId?: string
 ): UseQueryResult<Message[]> =>
   useQuery({
@@ -17,3 +18,28 @@ export const useMessagesByChatId = <T extends Chat[]>(
     queryFn: () => request(`/message/chat/${chatId}`),
     enabled: !!chatId,
   });
+
+export const useCreateMessage = (): UseMutationResult<
+  Message,
+  RequestError,
+  RequestBody<Partial<Message>>
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: ['message', 'create'],
+    mutationFn: (data) => {
+      return request<Message>(`/message`, {
+        method: 'POST',
+        data,
+      });
+    },
+
+    onSuccess: (message) => {
+      queryClient.invalidateQueries({ queryKey: ['message', 'chat', message.chatId] });
+    },
+    onError: (e) => {
+      console.error(e);
+    },
+  });
+};

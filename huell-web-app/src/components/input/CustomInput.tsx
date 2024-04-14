@@ -10,6 +10,7 @@ import {HTMLInputTypeAttribute, ReactNode} from "react";
 
 interface Props {
   type?: HTMLInputTypeAttribute;
+  value: string;
   placeholder?: string;
   placeholderColor?: string;
   inputLeftAddon?: ReactNode;
@@ -21,6 +22,7 @@ interface Props {
 
 export const CustomInput = ({
                               type = 'text',
+                              value,
                               placeholder,
                               placeholderColor,
                               inputLeftAddon,
@@ -44,6 +46,7 @@ export const CustomInput = ({
         _placeholder={{
           color: placeholderColor
         }}
+        value={value}
         onChange={(e) => onChange?.(e.target.value)}
       />
       {

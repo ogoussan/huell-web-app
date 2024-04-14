@@ -1,12 +1,13 @@
 import { MessageType } from '../enums';
 
 export interface Document {
-  _id?: string;
+  _id: string;
   created_at: Date;
   updated_at: Date;
 }
 
 export interface Message extends Document{
+  chatId: string;
   type: MessageType;
   content: string;
   date: Date;
