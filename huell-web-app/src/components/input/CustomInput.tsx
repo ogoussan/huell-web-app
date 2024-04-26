@@ -1,10 +1,9 @@
 import {
-  Input,
   InputGroup,
   InputLeftAddon,
   InputLeftElement,
   InputRightAddon,
-  InputRightElement
+  InputRightElement, Textarea
 } from "@chakra-ui/react";
 import {HTMLInputTypeAttribute, ReactNode} from "react";
 
@@ -34,8 +33,8 @@ export const CustomInput = ({
                               onEnterKeyPressed,
 }: Props) => {
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
       onEnterKeyPressed?.();
     }
   }
@@ -48,8 +47,9 @@ export const CustomInput = ({
       {
         leftElement && <InputLeftElement>{leftElement}</InputLeftElement>
       }
-      <Input
+      <Textarea
         type={type}
+        resize='none'
         pr='4.5rem'
         placeholder={placeholder}
         _placeholder={{

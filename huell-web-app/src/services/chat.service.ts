@@ -36,14 +36,12 @@ export const useChatStream = (sessionId?: string) => {
   const [isStreaming, setIsStreaming] = useState(false);
 
   const storeMessage = (input: string, type: ChatMessageType) => {
-    if (sessionId) {
-      setStoredMessages(prev => [...prev, {
-        type,
-        data: {
-          content: input,
-        },
-      }] as ChatMessage[]);
-    }
+    setStoredMessages(prev => [...prev, {
+      type,
+      data: {
+        content: input,
+      },
+    }] as ChatMessage[]);
   };
 
   const fetchData = async (input: string) => {

@@ -36,6 +36,10 @@ export const ChatPage = () => {
   }, [messages]);
 
   const handleSubmit = () => {
+    if (!input.trim()) {
+      return
+    }
+
     fetchData!(input);
     setInput('');
   }
@@ -83,7 +87,7 @@ export const ChatPage = () => {
                 />
                 <Button colorScheme={'red'} onClick={onOpen}><Trash2 size={32} /></Button>
               </HStack>
-              <VStack gap={2} w="100%" overflow="scroll" py={12} px={4} ref={scrollContainerRef}>
+              <VStack gap={2} w="100%" overflow="scroll" py={8} px={4} ref={scrollContainerRef}>
                 {messages.map((message, i) => (
                   <Box p={4} borderRadius={8} w="100%" key={i} bg="gray.700">
                     <ChatMessage
@@ -101,7 +105,7 @@ export const ChatPage = () => {
                   onChange={(value) => setInput(value)}
                   onEnterKeyPressed={handleSubmit}
                   rightElement={
-                    <Button isDisabled={!input || isStreaming} onClick={handleSubmit} p={2} cursor="pointer" _hover={activeStyle}>
+                    <Button isDisabled={!input.trim() || isStreaming} onClick={handleSubmit} p={2} cursor="pointer" _hover={activeStyle}>
                       {isStreaming ? (<Spinner />) : (<Send />)}
                     </Button>
                   }
