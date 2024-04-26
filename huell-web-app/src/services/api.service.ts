@@ -37,4 +37,22 @@ const request = async <T>(
   }).then((response: AxiosResponse<T>) => response.data);
 };
 
+export const requestWithResponse = async <T>(
+  url: string,
+  options?: AxiosRequestConfig,
+): Promise<AxiosResponse<T>> => {
+
+  const headers = options?.headers || {};
+
+  headers['Content-Type'] = 'application/json';
+
+  return client<T>({
+    url,
+    method: 'GET',
+    withCredentials: true,
+    headers,
+    ...options,
+  });
+};
+
 export default request;

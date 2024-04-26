@@ -3,7 +3,6 @@ import {Avatar, HStack, VStack, Text} from "@chakra-ui/react";
 interface Props {
   name: string,
   message: string,
-  date: string,
 }
 
 export const ChatMessage = ({name, message}: Props) => {

@@ -1,91 +1,115 @@
-import {VStack, Box, Divider, Button, Text, Spinner} from "@chakra-ui/react"
+import {VStack, Box, Button, Text, Spinner, HStack, Center, useDisclosure} from "@chakra-ui/react"
 import {CustomInput} from "../../components/input/CustomInput.tsx";
-import {Send} from "lucide-react";
-import {useCallback, useEffect, useState} from "react";
+import {Send, Trash2} from "lucide-react";
+import {useEffect, useRef, useState} from "react";
 import {ChatMessage} from "./ChatMessage.tsx";
 import {activeStyle} from "../../theme/style.ts";
-import {useChats, useCreateMessage, useMessagesByChatId} from "../../services/chat.service.ts";
+import {useChatStream, useDeleteChat} from "../../services/chat.service.ts";
 import {CustomSelect} from "../../components/input/CustomSelect.tsx";
-import {Chat, Message} from "../../interfaces";
-import {MessageType} from "../../enums";
+import {Chat} from "../../interfaces";
+import {ChatMessageType} from "../../enums";
+import {SimpleModal} from "../../components/container/SimpleModal.tsx";
 
 export const ChatPage = () => {
-  const [inputValue, setInputValue] = useState('');
-  const {data: chats = []} = useChats();
+  const [selectedSessionId, setSelectedSessionId]
+    = useState<string>();
+  const {chats = [], isChatsPending, messages = [], isStreaming, fetchData} = useChatStream(selectedSessionId);
+  const { mutate: deleteChat } = useDeleteChat();
+  const [input, setInput] = useState('');
   const [ isFirstChatFetched, setIsFirstChatFetched ] = useState(false);
   const [isNewChat, setIsNewChat] = useState(false);
-  const [selectedChatId, setSelectedChatId]
-    = useState<string>('new');
-  const {data: messages = []} = useMessagesByChatId(selectedChatId);
-  const onSendMessageSuccess = useCallback((message: Message) => {
-    if (isNewChat) {
-      setSelectedChatId(message.chatId);
-      setIsNewChat(false);
-    }
-  }, [isNewChat]);
-  const { mutate: sendMessage, isPending } = useCreateMessage(onSendMessageSuccess);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const {isOpen, onOpen, onClose} = useDisclosure();
 
   useEffect(() => {
     if (chats.length && !isFirstChatFetched) {
-      console.log('first')
-      const [firstChat] = chats;
-      setSelectedChatId(firstChat._id);
+      const [firstChat]: Chat[] = chats;
+      setSelectedSessionId(firstChat.sessionId);
       setIsFirstChatFetched(true);
     }
   }, [chats]);
 
-  const handleSend = (): void => {
-    sendMessage({
-      type: MessageType.USER,
-      chatId: selectedChatId === 'new' ? undefined : selectedChatId,
-      content: inputValue
-    });
-    setInputValue('');
+  useEffect(() => {
+    if (messages.length) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSubmit = () => {
+    fetchData!(input);
+    setInput('');
   }
 
   const handleNewChat = () => {
     setIsNewChat(true);
-    setSelectedChatId('new');
+    setSelectedSessionId(undefined);
+  }
+
+  const handleDelete = () => {
+    deleteChat(selectedSessionId);
+    setSelectedSessionId(undefined);
+    onClose();
   }
 
   return (
-      <VStack w="100%" h="100%" bg="gray.600" p={12} rounded="md">
-          <Button w="100%" onClick={handleNewChat}>
-            <Text>New Chat</Text>
-          </Button>
-          <CustomSelect
-            options={[...chats, {name: 'New Chat', _id: 'new'}]}
-            getValue={(chat: Chat) => chat._id}
-            getLabel={(chat: Chat) => chat.name}
-            onChange={(value) => setSelectedChatId(value)}
-            value={selectedChatId}
-            hiddenValues={isNewChat ? [] : ['new']}
-          />
-          <VStack gap={2} w="100%" overflow="scroll" pb={12} divider={<Divider />}>
-            {messages.map((message, i) => (
-              <Box p={4} borderRadius={8} w="100%" key={i} bg="gray.700">
-                <ChatMessage
-                  name={message.type === 'user' ? 'You' : 'Assistant'}
-                  message={message.content}
-                  date={new Date(message.created_at).toLocaleDateString()}
+      <>
+        <SimpleModal
+          title="Delete Chat"
+          isOpen={isOpen}
+          onClose={onClose}
+          primaryButton={{label: 'delete', onClick: handleDelete}}
+          secondaryButton={{label: 'cancel', onClick: onClose}}
+        >
+          <Text>Are you sure you want to delete this chat?</Text>
+        </SimpleModal>
+        <VStack w="100%" h="100%" bg="gray.600" p={12} rounded="md">
+          {isChatsPending ? (
+            <Center>
+              <Spinner />
+            </Center>
+          ) : (
+            <>
+              <Button p={4} w="100%" onClick={handleNewChat}>
+                <Text>New Chat</Text>
+              </Button>
+              <HStack w="100%">
+                <CustomSelect
+                  options={[...chats, {name: 'New Chat', sessionId: ''}]}
+                  getValue={(chat: Chat) => chat.sessionId}
+                  getLabel={(chat: Chat) => chat.name}
+                  onChange={(value) => setSelectedSessionId(value)}
+                  value={selectedSessionId || ''}
+                  hiddenValues={isNewChat ? [] : ['']}
                 />
-              </Box>
-            ))}
-          </VStack>
-          <VStack w="100%" mt="auto">
-            <CustomInput
-              placeholder="Ask me anything..."
-              placeholderColor={"gray.400"}
-              value={inputValue}
-              onChange={(value) => setInputValue(value)}
-              onEnterKeyPressed={handleSend}
-              rightElement={
-                <Box onClick={handleSend} p={2} cursor="pointer" _hover={activeStyle}>
-                  {isPending ? (<Spinner />) : (<Send />)}
-                </Box>
-              }
-            />
-          </VStack>
-      </VStack>
+                <Button colorScheme={'red'} onClick={onOpen}><Trash2 size={32} /></Button>
+              </HStack>
+              <VStack gap={2} w="100%" overflow="scroll" py={12} px={4} ref={scrollContainerRef}>
+                {messages.map((message, i) => (
+                  <Box p={4} borderRadius={8} w="100%" key={i} bg="gray.700">
+                    <ChatMessage
+                      name={message.type === ChatMessageType.HUMAN ? 'You' : 'Assistant'}
+                      message={message.data.content}
+                    />
+                  </Box>
+                ))}
+              </VStack>
+              <VStack w="100%" mt="auto">
+                <CustomInput
+                  placeholder="Ask me anything..."
+                  placeholderColor={"gray.400"}
+                  value={input}
+                  onChange={(value) => setInput(value)}
+                  onEnterKeyPressed={handleSubmit}
+                  rightElement={
+                    <Button isDisabled={!input || isStreaming} onClick={handleSubmit} p={2} cursor="pointer" _hover={activeStyle}>
+                      {isStreaming ? (<Spinner />) : (<Send />)}
+                    </Button>
+                  }
+                />
+              </VStack>
+            </>
+          )}
+        </VStack>
+      </>
   )
 }

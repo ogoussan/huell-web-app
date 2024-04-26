@@ -1,4 +1,4 @@
-import { MessageType } from '../enums';
+import {ChatMessageType} from '../enums';
 
 export interface Document {
   _id: string;
@@ -6,19 +6,37 @@ export interface Document {
   updated_at: Date;
 }
 
-export interface Message extends Document{
-  chatId: string;
-  type: MessageType;
-  content: string;
-  date: Date;
-}
-
 export interface Chat extends Document{
   name: string;
+  sessionId: string;
+  messages: ChatMessage[];
+}
+
+export interface ChatMessage extends Document{
+  type: ChatMessageType;
+  data: {
+    content: string;
+  }
+}
+
+export interface UserChatMessage extends Document{
+  content: string;
 }
 
 export interface ResponseError {
   statusCode: number;
   error: string;
   message?: string[];
+}
+
+export interface DeleteResult {
+  /**
+   * Raw SQL result returned by executed query.
+   */
+  raw: any;
+  /**
+   * Number of affected rows/documents
+   * Not all drivers support this
+   */
+  affected?: number | null;
 }
